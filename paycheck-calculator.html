@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paycheck Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #171b26;
+  --surface2: #1e2333;
+  --border: #2a3045;
+  --accent: #5b8dee;
+  --accent2: #38c97e;
+  --accent3: #f0a04b;
+  --danger: #e05c5c;
+  --text: #e8ecf4;
+  --text2: #8a93a8;
+  --text3: #5a6278;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+.page { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
+h1 { font-family: 'DM Serif Display', serif; font-size: 2.2rem; color: var(--text); margin-bottom: 4px; letter-spacing: -0.5px; }
+.subtitle { color: var(--text2); font-size: 14px; margin-bottom: 32px; font-weight: 300; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; overflow: hidden; }
+.card-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; user-select: none; }
+.card-header:hover { background: rgba(255,255,255,0.02); }
+.card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); font-weight: 600; }
+.card-chevron { color: var(--text3); font-size: 12px; transition: transform 0.2s; }
+.card-chevron.open { transform: rotate(180deg); }
+.card-body { padding: 0 20px 20px; }
+
+/* Form elements */
+label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; font-weight: 500; }
+input[type=text], input[type=number], input[type=date], select {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 13px;
+  outline: none; transition: border-color 0.15s; width: 100%; -moz-appearance: textfield;
+}
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
+input:focus, select:focus { border-color: var(--accent); }
+select option { background: var(--surface2); }
+input[type=checkbox] { width: auto; accent-color: var(--accent); cursor: pointer; }
+
+.field { margin-bottom: 14px; }
+.field-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+.field-row .field { flex: 1; min-width: 100px; margin-bottom: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+/* Buttons */
+.btn { border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; border: none; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #4a7de0; }
+.btn-add { background: rgba(91,141,238,0.12); border: 1px solid rgba(91,141,238,0.3); color: var(--accent); }
+.btn-add:hover { background: rgba(91,141,238,0.22); }
+.btn-danger { background: rgba(224,92,92,0.12); border: 1px solid rgba(224,92,92,0.3); color: var(--danger); }
+.btn-danger:hover { background: rgba(224,92,92,0.22); }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn-icon { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 2px 6px; transition: color 0.15s; }
+.btn-icon:hover { color: var(--text); }
+
+/* Salary steps */
+.step-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.step-row input { flex: 1; }
+
+/* Vest rows */
+.vest-row { display: grid; grid-template-columns: 110px 80px 90px 100px 36px 70px 32px; gap: 6px; align-items: center; margin-bottom: 8px; }
+.vest-total { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent2); padding: 8px 4px; }
+.lock-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px; cursor: pointer; color: var(--text3); font-size: 14px; transition: all 0.15s; width: 36px; height: 34px; display: flex; align-items: center; justify-content: center; }
+.lock-btn.locked { color: var(--accent3); border-color: rgba(240,160,75,0.4); }
+.vest-row-header { display: grid; grid-template-columns: 110px 80px 90px 100px 36px 70px 32px; gap: 6px; margin-bottom: 6px; }
+.vest-row-header span { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; }
+
+/* Benefits table */
+.benefits-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.benefits-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text3); padding: 6px 6px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border); }
+.benefits-table td { padding: 4px 4px; border-bottom: 1px solid rgba(42,48,69,0.5); vertical-align: middle; }
+.benefits-table td:first-child { color: var(--text2); font-size: 12px; padding-left: 2px; white-space: nowrap; }
+.benefits-table input { padding: 5px 7px; font-size: 12px; }
+.override-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent3); margin-left: 4px; vertical-align: middle; }
+
+/* Summary table */
+.table-wrap { overflow-x: auto; max-height: 520px; overflow-y: auto; border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 24px; }
+.summary-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.summary-table thead th { background: var(--surface); position: sticky; top: 0; z-index: 2; padding: 12px 14px; text-align: right; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); font-weight: 600; border-bottom: 1px solid var(--border); }
+.summary-table thead th:first-child, .summary-table thead th:nth-child(2) { text-align: left; }
+.summary-table tbody tr { cursor: pointer; transition: background 0.1s; }
+.summary-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.summary-table tbody tr.selected { background: rgba(91,141,238,0.1); }
+.summary-table td { padding: 10px 14px; border-bottom: 1px solid rgba(42,48,69,0.5); font-family: 'DM Mono', monospace; text-align: right; color: var(--text2); }
+.summary-table td:first-child, .summary-table td:nth-child(2) { text-align: left; font-family: 'DM Sans', sans-serif; }
+.summary-table td:first-child { color: var(--text); }
+.type-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: 'DM Sans', sans-serif; }
+.type-salary { background: rgba(91,141,238,0.15); color: var(--accent); }
+.type-vest { background: rgba(240,160,75,0.15); color: var(--accent3); }
+.totals-row td { border-top: 2px solid var(--border); border-bottom: none; color: var(--text); font-weight: 500; background: var(--surface); position: sticky; bottom: 0; }
+.totals-row td:first-child { font-family: 'DM Sans', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); }
+
+/* Detail panel */
+.detail-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
+.detail-title { font-family: 'DM Serif Display', serif; font-size: 1.3rem; margin-bottom: 20px; color: var(--text); }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 700px) { .detail-grid { grid-template-columns: 1fr; } }
+.detail-section h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text3); font-weight: 600; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.detail-line { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 13px; }
+.detail-line .dl-label { color: var(--text2); }
+.detail-line .dl-value { font-family: 'DM Mono', monospace; color: var(--text); }
+.detail-line.total { border-top: 1px solid var(--border); margin-top: 6px; padding-top: 10px; }
+.detail-line.total .dl-label { color: var(--text); font-weight: 600; }
+.detail-line.total .dl-value { color: var(--accent2); font-size: 15px; }
+.detail-line .dl-value.neg { color: var(--danger); }
+.detail-line .dl-value.muted { color: var(--text3); }
+
+/* Misc */
+.section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); font-weight: 600; margin-bottom: 14px; margin-top: 4px; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.checkbox-row label { margin: 0; cursor: pointer; }
+.fetch-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.fetch-status { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+.info-btn { display: inline-block; cursor: pointer; color: var(--accent); font-size: 12px; margin-left: 2px; vertical-align: middle; }
+.info-popup { position: fixed; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--text); max-width: 260px; z-index: 999; box-shadow: 0 4px 16px rgba(0,0,0,0.4); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Paycheck Calculator</h1>
+  <p class="subtitle">2026 · WA State · Monthly pay schedule
+    <span style="float:right;display:flex;gap:8px;">
+      <button class="btn btn-add btn-sm" id="btn-export">⬇ Export</button>
+      <button class="btn btn-add btn-sm" id="btn-import">⬆ Import</button>
+      <input type="file" id="file-import" accept=".json" style="display:none;">
+    </span>
+  </p>
+
+  <!-- CONFIG PANEL -->
+  <div id="config-panel">
+
+    <!-- Year & Tax Settings -->
+    <div class="card" id="card-tax">
+      <div class="card-header" data-card="tax">
+        <span class="card-title">Year &amp; Tax Settings</span>
+        <span class="card-chevron open" id="chev-tax">▼</span>
+      </div>
+      <div class="card-body" id="body-tax">
+        <div class="grid3">
+          <div class="field"><label>Year</label><input type="number" id="cfg-year" value="2026"></div>
+          <div class="field"><label>Filing Status</label>
+            <select id="cfg-filing">
+              <option value="single">Single</option>
+              <option value="mfs">MFS</option>
+              <option value="mfj" selected>MFJ</option>
+              <option value="hoh">HoH</option>
+            </select>
+          </div>
+          <div class="field" style="display:flex;align-items:flex-end;padding-bottom:2px;">
+            <div class="checkbox-row"><input type="checkbox" id="cfg-step2" checked><label for="cfg-step2">Step 2 (Higher Withholding)</label></div>
+          </div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>SS Wage Base ($)</label><input type="number" id="cfg-ss-base" value="184500"></div>
+          <div class="field"><label>401k Annual Cap ($)</label><input type="number" id="cfg-401k-cap" value="23500"></div>
+          <div class="field"><label>Medicare Surtax Threshold ($)</label><input type="number" id="cfg-medicare-thresh" value="200000"></div>
+        </div>
+        <div class="grid4">
+          <div class="field"><label>WA PFML Rate (%)</label><input type="number" id="cfg-pfml-rate" value="0.807159" step="0.000001"></div>
+          <div class="field"><label>WA PFML Wage Cap ($)</label><input type="number" id="cfg-pfml-cap" value="184500"></div>
+          <div class="field"><label>WA LTCare Rate (%)</label><input type="number" id="cfg-ltcare-rate" value="0.58" step="0.01"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Salary Steps -->
+    <div class="card" id="card-salary">
+      <div class="card-header" data-card="salary">
+        <span class="card-title">Salary Steps</span>
+        <span class="card-chevron open" id="chev-salary">▼</span>
+      </div>
+      <div class="card-body" id="body-salary">
+        <div id="salary-steps"></div>
+        <button class="btn btn-add btn-sm" id="btn-add-salary">+ Add Salary Step</button>
+      </div>
+    </div>
+
+    <!-- Stock Vests -->
+    <div class="card" id="card-vests">
+      <div class="card-header" data-card="vests">
+        <span class="card-title">Stock Vests</span>
+        <span class="card-chevron open" id="chev-vests">▼</span>
+      </div>
+      <div class="card-body" id="body-vests">
+        <div class="fetch-row">
+          <input type="text" id="finnhub-key" placeholder="Finnhub API key (free at finnhub.io)" style="flex:1;max-width:280px;">
+          <button class="btn btn-add btn-sm" id="btn-fetch-price">↻ Fetch AMZN Price</button>
+          <span class="fetch-status" id="fetch-status"></span>
+        </div>
+        <div class="vest-row-header">
+          <span>Date</span><span>Shares</span><span>Price/Share</span><span>Total Value</span><span></span><span>W/H %</span><span></span>
+        </div>
+        <div id="vest-rows"></div>
+        <button class="btn btn-add btn-sm" id="btn-add-vest">+ Add Vest</button>
+      </div>
+    </div>
+
+    <!-- Monthly Benefits -->
+    <div class="card" id="card-benefits">
+      <div class="card-header" data-card="benefits">
+        <span class="card-title">Monthly Benefits &amp; Deductions</span>
+        <span class="card-chevron open" id="chev-benefits">▼</span>
+      </div>
+      <div class="card-body" id="body-benefits">
+        <div style="overflow-x:auto;">
+          <table class="benefits-table" id="benefits-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>401k %</th>
+                <th>HSA</th>
+                <th>Medical</th>
+                <th>Dental</th>
+                <th>Vision</th>
+                <th>Supp Ins <span class="info-btn" data-info="Post-tax benefit deductions: accident ins, critical illness, individual disability, supplemental hospital, supp AD&D, supp life, etc.">ⓘ</span></th>
+                <th>Imputed <span class="info-btn" data-info="Imputed income (e.g. GTL over $50k) — added to gross, taxed, then deducted back. Phantom income that increases your tax burden.">ⓘ</span></th>
+                <th>Emp Life <span class="info-btn" data-info="Employer-paid life insurance premium — added to SS/Medicare taxable wages only. Does not affect federal or WA taxes.">ⓘ</span></th>
+              </tr>
+            </thead>
+            <tbody id="benefits-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /config-panel -->
+
+  <!-- YEAR SUMMARY TABLE -->
+  <div class="section-label">Year Summary</div>
+  <div class="table-wrap">
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Date</th><th>Type</th>
+          <th>Gross</th><th>Net</th><th>YTD Gross</th><th>YTD Net</th>
+        </tr>
+      </thead>
+      <tbody id="summary-tbody"></tbody>
+      <tfoot id="summary-tfoot"></tfoot>
+    </table>
+  </div>
+
+  <!-- PAYCHECK DETAIL -->
+  <div class="detail-panel" id="detail-panel" style="display:none;">
+    <div class="detail-title" id="detail-title"></div>
+    <div class="detail-grid" id="detail-grid"></div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const state = {
+  year: 2026,
+  filing: 'single',
+  step2: false,
+  ssBase: 184500,
+  cap401k: 23500,
+  medicareThresh: 200000,
+  pfmlRate: 0.00807159,
+  pfmlCap: 184500,
+  ltcareRate: 0.0058,
+  salarySteps: [
+    { date: '2026-01-01', annual: 0 },
+  ],
+  vests: [],
+  benefits: [],
+  amznPrice: 0,
+  selectedIdx: null,
+  results: [],
+  nextVestId: 1,
+};
+
+// ─── TAX TABLES ──────────────────────────────────────────────────────────────
+// 2026 IRS Pub 15-T Percentage Method Tables (Automated Payroll, Annualized)
+// Format: [bracketFloor, bracketCeiling, baseTax, rate, excessOver]
+const TABLES = {
+  // Standard withholding — MFJ (Step 2 NOT checked)
+  mfj: [
+    [0,19300,0,0,0],[19300,44100,0,0.10,19300],[44100,120100,2480,0.12,44100],
+    [120100,230700,11600,0.22,120100],[230700,422850,35932,0.24,230700],
+    [422850,531750,82048,0.32,422850],[531750,788000,116896,0.35,531750],
+    [788000,Infinity,206583.50,0.37,788000],
+  ],
+  // Standard withholding — Single or MFS (Step 2 NOT checked)
+  single: [
+    [0,7500,0,0,0],[7500,19900,0,0.10,7500],[19900,57900,1240,0.12,19900],
+    [57900,113200,5800,0.22,57900],[113200,209275,17966,0.24,113200],
+    [209275,263725,41024,0.32,209275],[263725,648100,58448,0.35,263725],
+    [648100,Infinity,192979.25,0.37,648100],
+  ],
+  // Standard withholding — Head of Household
+  hoh: [
+    [0,15550,0,0,0],[15550,33250,0,0.10,15550],[33250,83000,1770,0.12,33250],
+    [83000,121250,7740,0.22,83000],[121250,217300,16155,0.24,121250],
+    [217300,271750,39207,0.32,217300],[271750,656150,56631,0.35,271750],
+    [656150,Infinity,191171,0.37,656150],
+  ],
+  // Step 2 Checkbox — MFJ (higher withholding)
+  step2_mfj: [
+    [0,16100,0,0,0],[16100,28500,0,0.10,16100],[28500,66500,1240,0.12,28500],
+    [66500,121800,5800,0.22,66500],[121800,217875,17966,0.24,121800],
+    [217875,272325,41024,0.32,217875],[272325,400450,58448,0.35,272325],
+    [400450,Infinity,103291.75,0.37,400450],
+  ],
+  // Step 2 Checkbox — Single or MFS
+  step2_single: [
+    [0,8050,0,0,0],[8050,14250,0,0.10,8050],[14250,33250,620,0.12,14250],
+    [33250,60900,2900,0.22,33250],[60900,108938,8983,0.24,60900],
+    [108938,136163,20512,0.32,108938],[136163,328350,29224,0.35,136163],
+    [328350,Infinity,96489.63,0.37,328350],
+  ],
+  // Step 2 Checkbox — Head of Household
+  step2_hoh: [
+    [0,12075,0,0,0],[12075,20925,0,0.10,12075],[20925,45800,885,0.12,20925],
+    [45800,64925,3870,0.22,45800],[64925,112950,8077.50,0.24,64925],
+    [112950,140175,19603.50,0.32,112950],[140175,332375,28315.50,0.35,140175],
+    [332375,Infinity,95585.50,0.37,332375],
+  ],
+};
+TABLES.mfs = TABLES.single;
+TABLES.step2_mfs = TABLES.step2_single;
+
+function bracketTax(wage, table) {
+  for (let i = table.length - 1; i >= 0; i--) {
+    const [over,,base,rate,excess] = table[i];
+    if (wage > over) return base + (wage - excess) * rate;
+  }
+  return 0;
+}
+
+function federalTable() {
+  const { filing, step2 } = state;
+  if (step2) {
+    if (filing === 'mfj') return TABLES.step2_mfj;
+    if (filing === 'hoh') return TABLES.step2_hoh;
+    return TABLES.step2_single; // single, mfs
+  }
+  if (filing === 'mfj') return TABLES.mfj;
+  if (filing === 'hoh') return TABLES.hoh;
+  return TABLES.single;
+}
+
+// ─── BENEFITS INIT ───────────────────────────────────────────────────────────
+function initBenefits() {
+  state.benefits = Array.from({ length: 12 }, () => ({
+    k401pct: 0, hsa: 0, medical: 0, dental: 0, vision: 0, suppIns: 0,
+    imputed: 0, emplLife: 0,
+    overrides: {},
+  }));
+}
+
+// ─── CALCULATION ENGINE ───────────────────────────────────────────────────────
+function getSalaryForDate(dateStr) {
+  const d = dateStr;
+  let annual = state.salarySteps[0]?.annual || 0;
+  for (const s of state.salarySteps) {
+    if (s.date <= d) annual = s.annual;
+  }
+  return annual / 12;
+}
+
+function calcMedicareSurtax(gross, ytdGross) {
+  const thresh = state.medicareThresh;
+  const before = Math.max(0, ytdGross - thresh);
+  const after  = Math.max(0, ytdGross + gross - thresh);
+  return (after - before) * 0.009;
+}
+
+function calcPayEvents() {
+  const events = [];
+  const year = state.year;
+
+  // Regular salary: last day of each month
+  for (let m = 0; m < 12; m++) {
+    const lastDay = new Date(year, m + 1, 0);
+    const dd = String(lastDay.getDate()).padStart(2, '0');
+    const mm = String(m + 1).padStart(2, '0');
+    events.push({ type: 'salary', date: `${year}-${mm}-${dd}`, month: m });
+  }
+
+  // Vest events
+  for (const v of state.vests) {
+    if (!v.date) continue;
+    const gross = v.locked ? v.lockedValue : v.shares * v.price;
+    if (gross <= 0 && !v.locked) continue;
+    events.push({ type: 'vest', date: v.date, vest: v, gross });
+  }
+
+  events.sort((a, b) => a.date.localeCompare(b.date));
+
+  // YTD accumulators
+  let ytdGross = 0, ytdNet = 0, ytdSS = 0, ytd401k = 0, ytdFed = 0, ytdPFML = 0;
+  const results = [];
+
+  for (const ev of events) {
+    let gross, k401, preTax, taxable, federal, ss, medicare, pfml, ltcare, postTax, net, ssTaxable;
+    let hsa = 0, medical = 0, dental = 0, vision = 0, suppIns = 0;
+
+    // Determine gross first (needed for cap room calculations)
+    gross = ev.type === 'salary' ? getSalaryForDate(ev.date) : ev.gross;
+
+    // Cap room (computed once, used for both tax calc and YTD update)
+    const ssRoom   = Math.max(0, state.ssBase  - ytdSS);
+    const pfmlRoom = Math.max(0, state.pfmlCap - ytdPFML);
+
+    if (ev.type === 'salary') {
+      const b = state.benefits[ev.month];
+      const imputed = b.imputed || 0;
+      const emplLife = b.emplLife || 0;
+
+      // Gross includes imputed income (it's an earnings line item)
+      gross += imputed;
+
+      // 401k (pre-tax, on base salary only — not imputed)
+      const remaining401k = Math.max(0, state.cap401k - ytd401k);
+      k401 = Math.min((gross - imputed) * (b.k401pct / 100), remaining401k);
+
+      // Pre-tax deductions (reduce federal AND SS/Medicare taxable wages)
+      hsa = b.hsa; medical = b.medical; dental = b.dental; vision = b.vision;
+      preTax = hsa + medical + dental + vision;
+
+      // SS/Medicare taxable = gross - pre-tax + employer life
+      ssTaxable = Math.max(0, gross - preTax) + emplLife;
+
+      // Taxable wage for federal (annualized)
+      taxable = Math.max(0, gross - k401 - preTax);
+      federal = bracketTax(taxable * 12, federalTable()) / 12;
+
+      // Post-tax
+      suppIns = b.suppIns;
+      postTax = suppIns + imputed; // imputed is deducted back (phantom income)
+
+    } else {
+      // Vest: flat withholding rate
+      k401 = 0; preTax = 0; postTax = 0;
+      taxable = gross; ssTaxable = gross;
+      federal = gross * (ev.vest.wh / 100);
+    }
+
+    // SS, Medicare: taxable base = gross - pre-tax benefits + imputed (for salary)
+    // PFML, LTCare: applied to full gross (per WA rules)
+    ss      = Math.min(ssTaxable, ssRoom) * 0.062;
+    medicare = ssTaxable * 0.0145 + calcMedicareSurtax(ssTaxable, ytdGross);
+    pfml    = Math.min(gross, pfmlRoom) * state.pfmlRate;
+    ltcare  = gross * state.ltcareRate;
+
+    net = ev.type === 'salary'
+      ? gross - k401 - preTax - federal - ss - medicare - pfml - ltcare - postTax
+      : gross - federal - ss - medicare - pfml - ltcare;
+
+    // Update YTD accumulators
+    ytdGross += gross;
+    ytdNet   += net;
+    ytdSS    += Math.min(ssTaxable, ssRoom);
+    ytd401k  += k401;
+    ytdFed   += federal;
+    ytdPFML  += Math.min(gross, pfmlRoom);
+
+    results.push({
+      ...ev, gross, k401, preTax, taxable, federal, ss, medicare, pfml, ltcare,
+      postTax, net, hsa, medical, dental, vision, suppIns,
+      ytdGross, ytdNet, ytdSS, ytd401k, ytdFed, ytdPFML,
+    });
+  }
+
+  state.results = results;
+}
+</script>
+
+<script>
+// ─── FORMATTERS ──────────────────────────────────────────────────────────────
+const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+const fmtN = v => fmt.format(v);
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function fmtDate(d) {
+  const [y, m, day] = d.split('-');
+  return `${MONTHS[+m-1]} ${+day}, ${y}`;
+}
+
+// ─── RENDER SALARY STEPS ─────────────────────────────────────────────────────
+function renderSalarySteps() {
+  const el = document.getElementById('salary-steps');
+  el.innerHTML = state.salarySteps.map((s, i) => `
+    <div class="step-row" data-i="${i}">
+      <input type="date" class="sal-date" value="${s.date}" style="flex:0 0 140px;">
+      <input type="number" class="sal-annual" value="${s.annual}" placeholder="Annual salary" style="flex:1;">
+      <span style="font-size:12px;color:var(--text3);font-family:'DM Mono',monospace;white-space:nowrap;">${fmtN(s.annual/12)}/mo</span>
+      <button class="btn-icon sal-del" title="Remove">✕</button>
+    </div>`).join('');
+
+  el.querySelectorAll('.sal-date').forEach((inp, i) => {
+    inp.addEventListener('change', () => { state.salarySteps[i].date = inp.value; recalc(); });
+  });
+  el.querySelectorAll('.sal-annual').forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      state.salarySteps[i].annual = parseFloat(inp.value) || 0;
+      // update /mo display
+      inp.closest('.step-row').querySelector('span').textContent = fmtN(state.salarySteps[i].annual/12) + '/mo';
+      recalc();
+    });
+  });
+  el.querySelectorAll('.sal-del').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      if (state.salarySteps.length > 1) { state.salarySteps.splice(i, 1); renderSalarySteps(); recalc(); }
+    });
+  });
+}
+
+// ─── RENDER VEST ROWS ─────────────────────────────────────────────────────────
+function renderVests() {
+  const el = document.getElementById('vest-rows');
+  el.innerHTML = state.vests.map((v, i) => {
+    const total = v.locked ? v.lockedValue : v.shares * v.price;
+    return `
+    <div class="vest-row" data-i="${i}">
+      <input type="date" class="v-date" value="${v.date}">
+      <input type="number" class="v-shares" value="${v.shares || ''}" placeholder="Shares" ${v.locked ? 'disabled' : ''}>
+      <input type="number" class="v-price" value="${v.price || ''}" placeholder="Price" ${v.locked ? 'disabled style="opacity:0.4;"' : ''}>
+      <span class="vest-total">${v.locked ? fmtN(v.lockedValue) : (total > 0 ? fmtN(total) : '—')}</span>
+      <button class="lock-btn ${v.locked ? 'locked' : ''} v-lock" title="${v.locked ? 'Locked (click to unlock)' : 'Unlocked (click to lock)'}">${v.locked ? '🔒' : '🔓'}</button>
+      <input type="number" class="v-wh" value="${v.wh}" placeholder="22" style="text-align:right;">
+      <button class="btn-icon v-del" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.v-date').forEach((inp, i) => {
+    inp.addEventListener('change', () => { state.vests[i].date = inp.value; recalc(); });
+  });
+  el.querySelectorAll('.v-shares').forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      state.vests[i].shares = parseFloat(inp.value) || 0;
+      updateVestTotal(i); recalc();
+    });
+  });
+  el.querySelectorAll('.v-price').forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      state.vests[i].price = parseFloat(inp.value) || 0;
+      updateVestTotal(i); recalc();
+    });
+  });
+  el.querySelectorAll('.v-lock').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      const v = state.vests[i];
+      if (v.locked) {
+        v.locked = false;
+      } else {
+        // lock: store current computed value
+        v.lockedValue = v.shares * v.price;
+        v.locked = true;
+      }
+      renderVests(); recalc();
+    });
+  });
+  el.querySelectorAll('.v-wh').forEach((inp, i) => {
+    inp.addEventListener('input', () => { state.vests[i].wh = parseFloat(inp.value) || 0; recalc(); });
+  });
+  el.querySelectorAll('.v-del').forEach((btn, i) => {
+    btn.addEventListener('click', () => { state.vests.splice(i, 1); renderVests(); recalc(); });
+  });
+}
+
+function updateVestTotal(i) {
+  const v = state.vests[i];
+  const row = document.querySelectorAll('#vest-rows .vest-row')[i];
+  if (!row) return;
+  const total = v.locked ? v.lockedValue : v.shares * v.price;
+  row.querySelector('.vest-total').textContent = total > 0 ? fmtN(total) : '—';
+}
+
+// ─── RENDER BENEFITS TABLE ────────────────────────────────────────────────────
+function renderBenefits() {
+  const tbody = document.getElementById('benefits-tbody');
+  const fields = ['k401pct','hsa','medical','dental','vision','suppIns','imputed','emplLife'];
+  tbody.innerHTML = state.benefits.map((b, m) => {
+    const dot = Object.keys(b.overrides).length > 0 ? '<span class="override-dot" title="Overridden"></span>' : '';
+    return `<tr data-m="${m}">
+      <td>${MONTHS[m]}${dot}</td>
+      ${fields.map(f => `<td><input type="number" class="ben-inp" data-f="${f}" value="${b[f]}" step="${f==='k401pct'?'1':'0.01'}"></td>`).join('')}
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.ben-inp').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const m = +inp.closest('tr').dataset.m;
+      const f = inp.dataset.f;
+      const val = parseFloat(inp.value) || 0;
+      // Mark this month as overridden for this field
+      state.benefits[m][f] = val;
+      state.benefits[m].overrides[f] = true;
+      // Propagate forward to months that haven't been explicitly overridden for this field
+      for (let mm = m + 1; mm < 12; mm++) {
+        if (!state.benefits[mm].overrides[f]) {
+          state.benefits[mm][f] = val;
+        }
+      }
+      renderBenefits();
+      recalc();
+    });
+  });
+}
+
+// ─── RENDER SUMMARY TABLE ─────────────────────────────────────────────────────
+function renderSummary() {
+  const tbody = document.getElementById('summary-tbody');
+  const tfoot = document.getElementById('summary-tfoot');
+  const res = state.results;
+
+  tbody.innerHTML = res.map((r, i) => {
+    const sel = state.selectedIdx === i ? ' selected' : '';
+    const badge = r.type === 'salary'
+      ? '<span class="type-badge type-salary">Salary</span>'
+      : '<span class="type-badge type-vest">Vest</span>';
+    return `<tr class="${sel}" data-i="${i}">
+      <td>${fmtDate(r.date)}</td>
+      <td>${badge}</td>
+      <td>${fmtN(r.gross)}</td>
+      <td>${fmtN(r.net)}</td>
+      <td>${fmtN(r.ytdGross)}</td>
+      <td>${fmtN(r.ytdNet)}</td>
+    </tr>`;
+  }).join('');
+
+  // Totals
+  if (res.length) {
+    const last = res[res.length - 1];
+    const totFed = res.reduce((s, r) => s + r.federal, 0);
+    const totSS  = res.reduce((s, r) => s + r.ss, 0);
+    const totMed = res.reduce((s, r) => s + r.medicare, 0);
+    const totPFML= res.reduce((s, r) => s + r.pfml, 0);
+    const totLTC = res.reduce((s, r) => s + r.ltcare, 0);
+    const tot401k= res.reduce((s, r) => s + r.k401, 0);
+    const totOth = res.reduce((s, r) => s + r.preTax + r.postTax, 0);
+    tfoot.innerHTML = `<tr class="totals-row">
+      <td>Annual Total</td><td></td>
+      <td>${fmtN(last.ytdGross)}</td>
+      <td>${fmtN(last.ytdNet)}</td>
+      <td>${fmtN(last.ytdGross)}</td>
+      <td>${fmtN(last.ytdNet)}</td>
+    </tr>`;
+  }
+
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const i = +tr.dataset.i;
+      state.selectedIdx = state.selectedIdx === i ? null : i;
+      renderSummary();
+      renderDetail();
+    });
+  });
+}
+
+// ─── RENDER DETAIL PANEL ──────────────────────────────────────────────────────
+function renderDetail() {
+  const panel = document.getElementById('detail-panel');
+  const i = state.selectedIdx;
+  if (i === null || i === undefined || !state.results[i]) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  const r = state.results[i];
+  document.getElementById('detail-title').textContent =
+    `${fmtDate(r.date)} · ${r.type === 'salary' ? 'Salary' : 'Stock Vest'}`;
+
+  const dl = (label, value, cls='') =>
+    `<div class="detail-line"><span class="dl-label">${label}</span><span class="dl-value ${cls}">${value}</span></div>`;
+  const dlNeg = (label, value) => value !== 0 ? dl(label, `(${fmtN(value)})`, 'neg') : '';
+
+  let left = `<div class="detail-section">
+    <h4>Earnings</h4>
+    ${dl('Gross ' + (r.type === 'salary' ? 'Salary' : 'Vest Value'), fmtN(r.gross))}`;
+
+  if (r.type === 'salary') {
+    left += `<h4 style="margin-top:16px;">Pre-Tax Deductions</h4>
+    ${dlNeg('401(k)', r.k401)}
+    ${dlNeg('HSA', r.hsa)}
+    ${dlNeg('Medical', r.medical)}
+    ${dlNeg('Dental', r.dental)}
+    ${dlNeg('Vision', r.vision)}
+    ${dl('Taxable Wages', fmtN(r.taxable))}`;
+  }
+
+  left += `<h4 style="margin-top:16px;">Taxes</h4>
+    ${dlNeg('Federal Income Tax', r.federal)}
+    ${dlNeg('Social Security (6.2%)', r.ss)}
+    ${dlNeg('Medicare (1.45%' + (r.medicare > r.gross * 0.0145 + 0.01 ? ' + 0.9% surtax' : '') + ')', r.medicare)}
+    ${dlNeg('WA PFML', r.pfml)}
+    ${dlNeg('WA LTCare', r.ltcare)}`;
+
+  if (r.type === 'salary') {
+    left += `<h4 style="margin-top:16px;">Post-Tax Deductions</h4>
+    ${dlNeg('Supplemental Insurance', r.suppIns)}`;
+  }
+
+  left += `<div class="detail-line total">${dl('Net Pay', fmtN(r.net))}</div>`;
+  left += `</div>`;
+
+  const right = `<div class="detail-section">
+    <h4>YTD Context</h4>
+    ${dl('YTD Gross', fmtN(r.ytdGross))}
+    ${dl('YTD SS-Taxable Wages', fmtN(r.ytdSS))}
+    ${dl('YTD 401(k)', fmtN(r.ytd401k))}
+    ${dl('YTD Federal Tax', fmtN(r.ytdFed))}
+    ${dl('YTD PFML-Taxable Wages', fmtN(r.ytdPFML))}
+    ${dl('YTD Net', fmtN(r.ytdNet))}
+    <h4 style="margin-top:16px;">This Paycheck</h4>
+    ${dl('Gross', fmtN(r.gross))}
+    ${dl('Total Taxes', fmtN(r.federal + r.ss + r.medicare + r.pfml + r.ltcare), '')}
+    ${dl('Total Deductions', fmtN(r.k401 + r.preTax + r.postTax), '')}
+    ${dl('Effective Tax Rate', ((r.federal + r.ss + r.medicare + r.pfml + r.ltcare) / r.gross * 100).toFixed(1) + '%')}
+  </div>`;
+
+  document.getElementById('detail-grid').innerHTML = left + right;
+}
+</script>
+
+<script>
+// ─── RECALC ───────────────────────────────────────────────────────────────────
+function recalc() {
+  calcPayEvents();
+  renderSummary();
+  renderDetail();
+  try { localStorage.setItem('paycheckState', JSON.stringify(state)); } catch(e) {}
+}
+
+// ─── COLLAPSIBLE CARDS ────────────────────────────────────────────────────────
+document.querySelectorAll('.card-header').forEach(hdr => {
+  hdr.addEventListener('click', () => {
+    const key = hdr.dataset.card;
+    const body = document.getElementById('body-' + key);
+    const chev = document.getElementById('chev-' + key);
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : '';
+    chev.classList.toggle('open', !open);
+  });
+});
+
+// ─── INFO BUTTONS ─────────────────────────────────────────────────────────────
+document.addEventListener('click', (e) => {
+  const existing = document.querySelector('.info-popup');
+  if (existing) { existing.remove(); return; }
+  const btn = e.target.closest('.info-btn');
+  if (!btn) return;
+  const popup = document.createElement('div');
+  popup.className = 'info-popup';
+  popup.textContent = btn.dataset.info;
+  const rect = btn.getBoundingClientRect();
+  popup.style.top = (rect.bottom + 6) + 'px';
+  popup.style.left = Math.min(rect.left, window.innerWidth - 280) + 'px';
+  document.body.appendChild(popup);
+});
+
+// ─── TAX SETTINGS WIRING ─────────────────────────────────────────────────────
+function wireInput(id, key, parse = parseFloat) {
+  document.getElementById(id).addEventListener('input', e => {
+    state[key] = parse(e.target.value) || state[key];
+    recalc();
+  });
+}
+function wireInputDirect(id, key, parse = parseFloat) {
+  document.getElementById(id).addEventListener('input', e => {
+    const v = parse(e.target.value);
+    if (!isNaN(v)) { state[key] = v; recalc(); }
+  });
+}
+
+document.getElementById('cfg-year').addEventListener('input', e => {
+  state.year = parseInt(e.target.value) || 2026;
+  // Update default salary step dates to new year
+  recalc();
+});
+document.getElementById('cfg-filing').addEventListener('change', e => { state.filing = e.target.value; recalc(); });
+document.getElementById('cfg-step2').addEventListener('change', e => { state.step2 = e.target.checked; recalc(); });
+wireInputDirect('cfg-ss-base', 'ssBase');
+wireInputDirect('cfg-401k-cap', 'cap401k');
+wireInputDirect('cfg-medicare-thresh', 'medicareThresh');
+document.getElementById('cfg-pfml-rate').addEventListener('input', e => {
+  state.pfmlRate = (parseFloat(e.target.value) || 0) / 100;
+  recalc();
+});
+wireInputDirect('cfg-pfml-cap', 'pfmlCap');
+document.getElementById('cfg-ltcare-rate').addEventListener('input', e => {
+  state.ltcareRate = (parseFloat(e.target.value) || 0) / 100;
+  recalc();
+});
+
+// ─── SALARY STEPS ─────────────────────────────────────────────────────────────
+document.getElementById('btn-add-salary').addEventListener('click', () => {
+  const year = state.year;
+  state.salarySteps.push({ date: `${year}-01-01`, annual: 0 });
+  renderSalarySteps();
+});
+
+// ─── VESTS ────────────────────────────────────────────────────────────────────
+document.getElementById('btn-add-vest').addEventListener('click', () => {
+  state.vests.push({ id: state.nextVestId++, date: `${state.year}-06-15`, shares: 0, price: state.amznPrice, locked: false, lockedValue: 0, wh: 22 });
+  renderVests();
+  recalc();
+});
+
+document.getElementById('btn-fetch-price').addEventListener('click', async () => {
+  const status = document.getElementById('fetch-status');
+  const apiKey = document.getElementById('finnhub-key').value.trim();
+  if (!apiKey) { status.textContent = 'Enter a Finnhub API key first (free at finnhub.io)'; return; }
+  localStorage.setItem('finnhubKey', apiKey);
+  status.textContent = 'Fetching…';
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=AMZN&token=${apiKey}`);
+    const data = await res.json();
+    const price = data.c; // current price
+    if (!price) throw new Error('No price returned');
+    state.amznPrice = price;
+    state.vests.forEach(v => { if (!v.locked && v.price === 0) v.price = price; });
+    renderVests();
+    recalc();
+    status.textContent = `AMZN: $${price.toFixed(2)}`;
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+  }
+});
+
+// ─── IMPORT / EXPORT ─────────────────────────────────────────────────────────
+document.getElementById('btn-export').addEventListener('click', () => {
+  const { results, selectedIdx, ...exportable } = state;
+  const blob = new Blob([JSON.stringify(exportable, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `paycheck-config-${state.year}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('btn-import').addEventListener('click', () => {
+  document.getElementById('file-import').click();
+});
+
+document.getElementById('file-import').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const imported = JSON.parse(reader.result);
+      Object.assign(state, imported);
+      state.selectedIdx = null;
+      state.results = [];
+      // Sync UI
+      document.getElementById('cfg-year').value = state.year;
+      document.getElementById('cfg-filing').value = state.filing;
+      document.getElementById('cfg-step2').checked = state.step2;
+      document.getElementById('cfg-ss-base').value = state.ssBase;
+      document.getElementById('cfg-401k-cap').value = state.cap401k;
+      document.getElementById('cfg-medicare-thresh').value = state.medicareThresh;
+      document.getElementById('cfg-pfml-rate').value = (state.pfmlRate * 100).toFixed(6);
+      document.getElementById('cfg-pfml-cap').value = state.pfmlCap;
+      document.getElementById('cfg-ltcare-rate').value = (state.ltcareRate * 100).toFixed(4);
+      renderSalarySteps();
+      renderVests();
+      renderBenefits();
+      recalc();
+    } catch (err) { alert('Invalid config file: ' + err.message); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+(function restoreState() {
+  try {
+    const saved = localStorage.getItem('paycheckState');
+    if (!saved) return;
+    const s = JSON.parse(saved);
+    // Merge saved values into state (preserves any new keys added in future)
+    Object.assign(state, s);
+  } catch(e) {}
+})();
+
+// Sync config inputs to (possibly restored) state
+document.getElementById('cfg-year').value = state.year;
+document.getElementById('cfg-filing').value = state.filing;
+document.getElementById('cfg-step2').checked = state.step2;
+document.getElementById('cfg-ss-base').value = state.ssBase;
+document.getElementById('cfg-401k-cap').value = state.cap401k;
+document.getElementById('cfg-medicare-thresh').value = state.medicareThresh;
+document.getElementById('cfg-pfml-rate').value = (state.pfmlRate * 100).toFixed(6);
+document.getElementById('cfg-pfml-cap').value = state.pfmlCap;
+document.getElementById('cfg-ltcare-rate').value = (state.ltcareRate * 100).toFixed(4);
+
+if (!state.benefits.length) initBenefits();
+document.getElementById('finnhub-key').value = localStorage.getItem('finnhubKey') || '';
+renderSalarySteps();
+renderVests();
+renderBenefits();
+recalc();
+</script>
+</body>
+</html>
